@@ -59,10 +59,10 @@ module ParallelTests
           cmd = "nice #{cmd}" if options[:nice]
           cmd = "#{cmd} 2>&1" if options[:combine_stderr]
 
-          execute_command_and_capture_output(env, cmd, options[:serialize_stdout])
+          execute_command_and_capture_output(env, cmd, test_env_number(process_number), options[:serialize_stdout])
         end
 
-        def execute_command_and_capture_output(env, cmd, silence)
+        def execute_command_and_capture_output(env, cmd, process_number, silence)
           # make processes descriptive / visible in ps -ef
           separator = (WINDOWS ? ' & ' : ';')
           exports = env.map do |k,v|
@@ -73,8 +73,8 @@ module ParallelTests
             end
           end.join(separator)
           cmd = "#{exports}#{separator}#{cmd}"
-          puts "[ParallelTests::Runner] Running command: #{cmd}"
-          output = open("|#{cmd}", "r") { |output| capture_output(output, silence) }
+          puts "[ParallelTests::Runner] Running command: #{cmd}\n\n"
+          output = open("|#{cmd}", "r") { |output| capture_output(output, silence, process_number) }
           exitstatus = $?.exitstatus
 
           {:stdout => output, :exit_status => exitstatus}
@@ -117,7 +117,7 @@ module ParallelTests
         end
 
         # read output of the process and print it in chunks
-        def capture_output(out, silence)
+        def capture_output(out, silence, process_number)
           result = ""
           loop do
             begin
@@ -127,7 +127,11 @@ module ParallelTests
               end
               result << read
               unless silence
-                $stdout.print read
+                if read == "\e[32m.\e[0m"
+                  $stdout.print read
+                else
+                  $stdout.print "[ParallelTests Thread ##{process_number}]:#{read}"
+                end
                 $stdout.flush
               end
             end
