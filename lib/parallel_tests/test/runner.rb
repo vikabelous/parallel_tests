@@ -73,7 +73,7 @@ module ParallelTests
             end
           end.join(separator)
           cmd = "#{exports}#{separator}#{cmd}"
-
+          puts "[ParallelTests::Runner] Running command: #{cmd}"
           output = open("|#{cmd}", "r") { |output| capture_output(output, silence) }
           exitstatus = $?.exitstatus
 
